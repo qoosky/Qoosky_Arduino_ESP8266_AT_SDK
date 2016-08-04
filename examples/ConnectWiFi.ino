@@ -2,8 +2,8 @@
 
 // Arduino UNO の場合は、例えばデジタル入出力の 2 番, 3 番ピンを利用して
 // ESP-WROOM-02 とシリアル通信するように設定します。
-const byte rxPin = 2; // Wire this to Tx Pin of ESP8266
-const byte txPin = 3; // Wire this to Rx Pin of ESP8266
+const byte rxPin = 2; // ESP8266 の Tx ピンに接続してください。
+const byte txPin = 3; // ESP8266 の Rx ピンに接続してください。
 Qoosky_ESP8266_AT qoosky(rxPin, txPin);
 
 void setup() {
