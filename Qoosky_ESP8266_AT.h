@@ -70,6 +70,10 @@ class Qoosky_ESP8266_AT
     bool connectTcp(String host, uint32_t port);
     bool disconnectTcp();
     bool connectedTcp(); // TCP コネクションが存在すれば true を返します。
+
+ private:
+    // WebSocket 通信の接続状況
+    bool m_webSocketStatus;
 };
 
 #endif // #ifndef QOOSKY_ESP8266_AT_H_
