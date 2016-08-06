@@ -18,7 +18,7 @@ void setup() {
         else Serial.println("AT status NOT OK");
         delay(1000);
     }
-    while(true) {
+    while(true) { // 書き換えてください↓
         if(qoosky.connectAP("SSID", "PASSWORD")) { Serial.println("Successfully connected to an AP"); break; }
         else Serial.println("Failed to connected to an AP. retrying...");
         delay(1000);
@@ -30,7 +30,7 @@ void setup() {
     }
 
     // Qoosky に接続します。
-    while(true) {
+    while(true) { // 書き換えてください↓
         if(qoosky.connectQoosky("XXXX-XXXX-XXXX-XXXX")) { Serial.println("Successfully connected to Qoosky."); break; }
         else Serial.println("Failed to connect to Qoosky, retrying...");
         delay(1000);
