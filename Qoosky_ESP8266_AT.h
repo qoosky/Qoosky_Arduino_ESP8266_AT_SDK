@@ -57,6 +57,14 @@ class Qoosky_ESP8266_AT
     //   5: ESP8266 はアクセスポイントに接続できていない。
     uint8_t ipStatus();
 
+ public:
+    // 事前に取得しておいた認証トークンで Qoosky に接続します。
+    bool connectQoosky(String apiToken);
+
+    // メッセージの送受信を行います。
+    bool sendMessage(const String& msg); // Qoosky Cloud Controller の下部に表示されるメッセージを送信します。
+    int popPushedKey(); // 0: 押されていない, 1-4: 右側ボタンの↑←→↓, 5-8: 左側ボタンの↑←→↓
+
  private:
     // TCP 通信を開始または終了します。
     bool connectTcp(String host, uint32_t port);

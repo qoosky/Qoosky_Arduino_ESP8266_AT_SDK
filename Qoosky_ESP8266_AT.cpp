@@ -146,3 +146,18 @@ bool Qoosky_ESP8266_AT::connectTcp(String host, uint32_t port) {
     } while(retry--);
     return false;
 }
+
+bool Qoosky_ESP8266_AT::connectQoosky(String apiToken) {
+    // TODO
+    return true;
+}
+
+bool Qoosky_ESP8266_AT::sendMessage(const String& msg) {
+    // TODO
+    return true;
+}
+
+int Qoosky_ESP8266_AT::popPushedKey() {
+    // TODO
+    return 1;
+}
