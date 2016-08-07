@@ -244,11 +244,11 @@ bool Qoosky_ESP8266_AT::connectQoosky(String apiToken) {
         m_serial->write(frame[i]);
     }
 
-    // レスポンスをバッファリングします。
+    // レスポンスをバッファリングして結果を検証します。
     start = millis();
     response = "";
-    lenLimit = 256;
-    while (millis() - start < 3000) {
+    lenLimit = 128;
+    while (millis() - start < 2000) {
         if(m_serial->available() > 0) {
             response += (char)m_serial->read();
             if(--lenLimit == 0) break;
@@ -262,10 +262,10 @@ bool Qoosky_ESP8266_AT::sendMessage(const String& msg) {
     uint32_t len = msg.length();
     if(len > 125) return false; // 本ライブラリでは 125 文字までの送信をサポートします。
     if(!m_webSocketStatus && !connectQoosky(m_apiToken)) return false;
-    return true; // TODO
+    return true; // TODO (90 秒で切断されることを考慮)
 }
 
 int Qoosky_ESP8266_AT::popPushedKey() {
     if(!m_webSocketStatus && !connectQoosky(m_apiToken)) return false;
-    return 1; // TODO (skip 2byte)
+    return 1; // TODO (skip 2byte, 90 秒で切断されることを考慮)
 }
