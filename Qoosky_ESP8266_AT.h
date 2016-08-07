@@ -72,8 +72,8 @@ class Qoosky_ESP8266_AT
     bool connectedTcp(); // TCP コネクションが存在すれば true を返します。
 
  private:
-    // WebSocket 通信の接続状況
-    bool m_webSocketStatus;
+    bool m_webSocketStatus; // WebSocket 通信の接続状況
+    String m_apiToken; // Qoosky API トークンのキャッシュ
 };
 
 #endif // #ifndef QOOSKY_ESP8266_AT_H_

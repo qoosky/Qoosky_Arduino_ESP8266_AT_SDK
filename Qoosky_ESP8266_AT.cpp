@@ -1,7 +1,7 @@
 #include "Qoosky_ESP8266_AT.h"
 
 Qoosky_ESP8266_AT::Qoosky_ESP8266_AT(uint32_t rxPin, uint32_t txPin, uint32_t baud) :
-    m_rxPin(rxPin), m_txPin(txPin), m_webSocketStatus(false)
+    m_rxPin(rxPin), m_txPin(txPin), m_webSocketStatus(false), m_apiToken("")
 {
     SoftwareSerial *serial = new SoftwareSerial(rxPin, txPin);
     serial->begin(baud);
@@ -9,12 +9,12 @@ Qoosky_ESP8266_AT::Qoosky_ESP8266_AT(uint32_t rxPin, uint32_t txPin, uint32_t ba
 }
 
 Qoosky_ESP8266_AT::Qoosky_ESP8266_AT(SoftwareSerial &serial) :
-    m_rxPin(0), m_txPin(0), m_serial(&serial), m_webSocketStatus(false)
+    m_rxPin(0), m_txPin(0), m_serial(&serial), m_webSocketStatus(false), m_apiToken("")
 {
 }
 
 Qoosky_ESP8266_AT::Qoosky_ESP8266_AT(HardwareSerial &serial) :
-    m_rxPin(0), m_txPin(0), m_serial(&serial), m_webSocketStatus(false)
+    m_rxPin(0), m_txPin(0), m_serial(&serial), m_webSocketStatus(false), m_apiToken("")
 {
 }
 
@@ -143,12 +143,13 @@ bool Qoosky_ESP8266_AT::connectTcp(String host, uint32_t port) {
             return true;
         }
         delay(100);
-    } while(retry--);
+    } while(--retry);
     return false;
 }
 
 bool Qoosky_ESP8266_AT::connectQoosky(String apiToken) {
     if(m_webSocketStatus) return true; // 既に正常な接続が存在する場合は何もせず終了します。
+    m_apiToken = apiToken; // API トークンのキャッシュを更新します。
 
     // (既に TCP 接続があれば切断して) TCP 接続を確立します。
     connectTcp("api.qoosky.io", 80);
@@ -189,7 +190,7 @@ bool Qoosky_ESP8266_AT::connectQoosky(String apiToken) {
     }
 
     // シリアルバッファオーバーフローを起こす前に変数に格納します。
-    const unsigned long start = millis();
+    unsigned long start = millis();
     String response = "";
     uint32_t lenLimit = 64;
     while (millis() - start < 1000) {
@@ -203,36 +204,30 @@ bool Qoosky_ESP8266_AT::connectQoosky(String apiToken) {
     // リクエストを送信できていれば (SEND OK) よいとします。
     if(response.indexOf("OK") == -1) return false;
 
-    // API トークンを送信して認証します。
-    return (m_webSocketStatus = sendMessage("{\"token\":\"" + apiToken + "\"}"));
-}
+    // API トークンを送信して認証します。JSON 文字列を用意します。
+    String json = "{\"token\":\"" + apiToken + "\"}";
+    if(json.length() > 125) return false; // 不正な API トークンです。
 
-bool Qoosky_ESP8266_AT::sendMessage(const String& msg) {
-    uint32_t len = msg.length();
-    if(len > 125) return false; // 本ライブラリでは 125 文字までの送信をサポートします。
-
-
-
-
-
-    // TODO
-    // https://tools.ietf.org/html/rfc6455#section-5.2 以降
+    // WebSocket フレームを作ります。
+    // https://tools.ietf.org/html/rfc6455#section-5.2
     String frame = "";
-    len = 6 + 1 + msg.length();
-    frame += (char)B10000001;
-    frame += (char)B10000000;
-    frame[1] = (char)frame[1] + (char)msg.length();
-    frame += (char)random(-128,128);
-    frame += (char)random(-128,128);
-    frame += (char)random(-128,128);
-    frame += (char)random(-128,128);
-    for(uint32_t i = 0; i < msg.length(); ++i) {
-        frame += (char)((char)msg[i] ^ (char)frame[i % 4 + 2]);
-    }
-    frame += (char)B00000000;
+    frame += (char)(0x81); // フラグメント化していないテキストメッセージであることを表現します。
+    frame += (char)(0x80 + json.length()); // クライアントからのフレームは常にマスクされている必要があります。ペイロード長は 125 byte 以下のみサポート。
+    frame += (char)random(0xff); // Arduino の char 型の範囲でマスク時のキーを乱数から生成します。
+    frame += (char)random(0xff);
+    frame += (char)random(0xff);
+    frame += (char)random(0xff);
+    // RFC より引用
+    //> Octet i of the transformed data ("transformed-octet-i") is the XOR of
+    //> octet i of the original data ("original-octet-i") with octet at index
+    //> i modulo 4 of the masking key ("masking-key-octet-j"):
+    //> j = i MOD 4
+    //> transformed-octet-i = original-octet-i XOR masking-key-octet-j
+    for(uint32_t i = 0; i < json.length(); ++i) frame += (char)(json[i] ^ frame[i % 4 + 2]);
+    len = 6 + json.length();
 
     // データ送信をするための AT コマンド
-    uint8_t retry = 15;
+    retry = 15;
     do {
         String buf;
         rxClear();
@@ -242,42 +237,35 @@ bool Qoosky_ESP8266_AT::sendMessage(const String& msg) {
         if(!(--retry)) return false;
     } while(true);
 
-    // send data
-    uint32_t sentLen = 0;
+    // データを送信します。
+    sentLen = 0;
     for(uint8_t i = 0; i < len; ++i) {
         if(++sentLen % 64 == 0) delay(20);
         m_serial->write(frame[i]);
     }
 
-    // Start to buffer serial data fast!! to avoid serial buffer overflow.
-    unsigned long start2 = millis();
-    String response = "";
-    uint32_t lenLimit = 1024;
-    while (millis() - start2 < 2000) {
-        if(m_serial->available() > 0) {
-            response += (char)m_serial->read();
-            if(--lenLimit == 0) break;
-        }
-    }
-    Serial.println("-----------------");
-    Serial.println(response);
-
-    start2 = millis();
+    // レスポンスをバッファリングします。
+    start = millis();
     response = "";
-    lenLimit = 1024;
-    while (millis() - start2 < 2000) {
+    lenLimit = 256;
+    while (millis() - start < 3000) {
         if(m_serial->available() > 0) {
             response += (char)m_serial->read();
             if(--lenLimit == 0) break;
         }
     }
-    Serial.println("-----------------");
-    Serial.println(response);
-    return true;
+    if(response.indexOf("suc") == -1) return false; // Autheotication success.
+    return (m_webSocketStatus = true);
+}
+
+bool Qoosky_ESP8266_AT::sendMessage(const String& msg) {
+    uint32_t len = msg.length();
+    if(len > 125) return false; // 本ライブラリでは 125 文字までの送信をサポートします。
+    if(!m_webSocketStatus && !connectQoosky(m_apiToken)) return false;
+    return true; // TODO
 }
 
 int Qoosky_ESP8266_AT::popPushedKey() {
-    // TODO
-    // skip 2byte
-    return 1;
+    if(!m_webSocketStatus && !connectQoosky(m_apiToken)) return false;
+    return 1; // TODO (skip 2byte)
 }
