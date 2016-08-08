@@ -266,13 +266,48 @@ bool Qoosky_ESP8266_AT::connectQoosky(String apiToken) {
 }
 
 bool Qoosky_ESP8266_AT::sendMessage(const String& msg) {
-    uint32_t len = msg.length();
-    if(len > 125) return false; // 本ライブラリでは 125 文字までの送信をサポートします。
+    if(msg.length() > 125) return false; // 本ライブラリでは 125 文字までの送信をサポートします。
     if(millis() - m_lastWebSocketTime > 90000) m_webSocketStatus = false; // 90 秒が経過して切断されている場合
     if(!m_webSocketStatus && !connectQoosky(m_apiToken)) return false;
-    // TODO>>>
+
+    // WebSocket フレームを作って送信します。
+    String frame = "";
+    frame += (char)(0x81);
+    frame += (char)(0x80 + msg.length());
+    frame += (char)random(0xff);
+    frame += (char)random(0xff);
+    frame += (char)random(0xff);
+    frame += (char)random(0xff);
+    for(uint32_t i = 0; i < msg.length(); ++i) frame += (char)(msg[i] ^ frame[i % 4 + 2]);
+    uint32_t len = 6 + msg.length();
+
+    // データ送信をするための AT コマンド
+    String buf;
+    rxClear();
+    m_serial->print("AT+CIPSEND=");
+    m_serial->println(len);
+    checkATResponse(&buf, "> ");
+
+    // データを送信します。
+    uint32_t sentLen = 0;
+    for(uint8_t i = 0; i < len; ++i) {
+        if(++sentLen % 64 == 0) delay(20);
+        m_serial->write(frame[i]);
+    }
+
+    // レスポンスをバッファリングして結果を検証します。
+    const unsigned long start = millis();
+    String response = "";
+    uint32_t lenLimit = 64;
+    while (millis() - start < 1000) {
+        if(m_serial->available() > 0) {
+            response += (char)m_serial->read();
+            if(--lenLimit == 0) break;
+        }
+    }
+    if(response.indexOf("OK") == -1) return false;
     m_lastWebSocketTime = millis();
-    return true;
+    return (m_webSocketStatus = true);
 }
 
 int Qoosky_ESP8266_AT::popPushedKey() {
