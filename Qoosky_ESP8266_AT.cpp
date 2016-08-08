@@ -337,10 +337,6 @@ int Qoosky_ESP8266_AT::popPushedKey() {
         uint8_t key2 = response[index + 44] - '0';
         uint8_t pushedKey = 0;
         if(key1 == key2) pushedKey = key1;
-        else {
-            if(1 <= key1 && key1 <= 8) pushedKey = key1;
-            else if(1 <= key2 && key2 <= 8) pushedKey = key2;
-        }
         if(pushedKey != 0) m_lastWebSocketTime = millis();
         if((m_pushedKeyLast + 1) % PUSHED_KEYS_CACHE_SIZE != m_pushedKeyFirst) {
             m_pushedKeys[m_pushedKeyLast] = pushedKey;
