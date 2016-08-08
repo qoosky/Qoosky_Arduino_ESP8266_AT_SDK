@@ -307,7 +307,7 @@ bool Qoosky_ESP8266_AT::sendMessage(const String& msg) {
     }
     if(response.indexOf("OK") == -1) return false;
     m_lastWebSocketTime = millis();
-    return (m_webSocketStatus = true);
+    return true;
 }
 
 int Qoosky_ESP8266_AT::popPushedKey() {

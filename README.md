@@ -1,6 +1,6 @@
 Qoosky_Arduino_ESP8266_AT_SDK
 ==================
-本ページは [Qoosky Cloud Controller](https://www.qoosky.io/help/api) を Arduino から利用するための情報をまとめたものです。
+IoT BaaS APIs のひとつ [Qoosky Cloud Controller](https://www.qoosky.io/help/api) を Arduino から利用するための情報をまとめます。
 
 ### 必要なもの
 『[電子工作でインターネットに無線接続して通信を行う (Arduino)](https://www.qoosky.io/techs/14bfffdc82)』の回路図をもとに、ブレッドボード上で組まれた以下のパーツをご準備ください。
