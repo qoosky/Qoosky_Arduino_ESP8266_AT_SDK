@@ -1,26 +1,32 @@
 #include "Qoosky_ESP8266_AT.h"
 
+#define PUSHED_KEYS_CACHE_SIZE 5
+
 Qoosky_ESP8266_AT::Qoosky_ESP8266_AT(uint32_t rxPin, uint32_t txPin, uint32_t baud) :
-    m_rxPin(rxPin), m_txPin(txPin), m_webSocketStatus(false), m_apiToken("")
+    m_rxPin(rxPin), m_txPin(txPin), m_webSocketStatus(false), m_apiToken(""), m_lastWebSocketTime(0), m_pushedKeyFirst(0), m_pushedKeyLast(0)
 {
     SoftwareSerial *serial = new SoftwareSerial(rxPin, txPin);
     serial->begin(baud);
     m_serial = serial;
+    m_pushedKeys = new uint8_t[PUSHED_KEYS_CACHE_SIZE];
 }
 
 Qoosky_ESP8266_AT::Qoosky_ESP8266_AT(SoftwareSerial &serial) :
-    m_rxPin(0), m_txPin(0), m_serial(&serial), m_webSocketStatus(false), m_apiToken("")
+    m_rxPin(0), m_txPin(0), m_serial(&serial), m_webSocketStatus(false), m_apiToken(""), m_lastWebSocketTime(0), m_pushedKeyFirst(0), m_pushedKeyLast(0)
 {
+    m_pushedKeys = new uint8_t[PUSHED_KEYS_CACHE_SIZE];
 }
 
 Qoosky_ESP8266_AT::Qoosky_ESP8266_AT(HardwareSerial &serial) :
-    m_rxPin(0), m_txPin(0), m_serial(&serial), m_webSocketStatus(false), m_apiToken("")
+    m_rxPin(0), m_txPin(0), m_serial(&serial), m_webSocketStatus(false), m_apiToken(""), m_lastWebSocketTime(0), m_pushedKeyFirst(0), m_pushedKeyLast(0)
 {
+    m_pushedKeys = new uint8_t[PUSHED_KEYS_CACHE_SIZE];
 }
 
 Qoosky_ESP8266_AT::~Qoosky_ESP8266_AT() {
     disconnectAP();
     if(m_rxPin != 0 && m_txPin !=0) delete m_serial;
+    delete[] m_pushedKeys;
 }
 
 void Qoosky_ESP8266_AT::rxClear() {
@@ -255,17 +261,61 @@ bool Qoosky_ESP8266_AT::connectQoosky(String apiToken) {
         }
     }
     if(response.indexOf("suc") == -1) return false; // Autheotication success.
+    m_lastWebSocketTime = millis();
     return (m_webSocketStatus = true);
 }
 
 bool Qoosky_ESP8266_AT::sendMessage(const String& msg) {
     uint32_t len = msg.length();
     if(len > 125) return false; // 本ライブラリでは 125 文字までの送信をサポートします。
+    if(millis() - m_lastWebSocketTime > 90000) m_webSocketStatus = false; // 90 秒が経過して切断されている場合
     if(!m_webSocketStatus && !connectQoosky(m_apiToken)) return false;
-    return true; // TODO (90 秒で切断されることを考慮)
+    // TODO>>>
+    m_lastWebSocketTime = millis();
+    return true;
 }
 
 int Qoosky_ESP8266_AT::popPushedKey() {
+    if(millis() - m_lastWebSocketTime > 90000) m_webSocketStatus = false; // 90 秒が経過して切断されている場合
     if(!m_webSocketStatus && !connectQoosky(m_apiToken)) return false;
-    return 1; // TODO (skip 2byte, 90 秒で切断されることを考慮)
+
+    // 既にキャッシュがある場合
+    if(m_pushedKeyFirst != m_pushedKeyLast) {
+        uint8_t pushedKey = m_pushedKeys[m_pushedKeyFirst];
+        m_pushedKeyFirst = (m_pushedKeyFirst + 1) % PUSHED_KEYS_CACHE_SIZE;
+        return pushedKey;
+    }
+
+    // シリアルバッファから読み出して解析
+    const unsigned long start = millis();
+    String response = "";
+    uint32_t lenLimit = 512;
+    while (millis() - start < 1000) {
+        if(m_serial->available() > 0) {
+            response += (char)m_serial->read();
+            if(--lenLimit == 0) break;
+        }
+    }
+    int index = -3;
+    while((index = response.indexOf("IPD", index + 3)) != -1) {
+        uint8_t key1 = response[index + 22] - '0';
+        uint8_t key2 = response[index + 44] - '0';
+        uint8_t pushedKey = 0;
+        if(key1 == key2) pushedKey = key1;
+        else {
+            if(1 <= key1 && key1 <= 8) pushedKey = key1;
+            else if(1 <= key2 && key2 <= 8) pushedKey = key2;
+        }
+        if(pushedKey != 0) m_lastWebSocketTime = millis();
+        if((m_pushedKeyLast + 1) % PUSHED_KEYS_CACHE_SIZE != m_pushedKeyFirst) {
+            m_pushedKeys[m_pushedKeyLast] = pushedKey;
+            m_pushedKeyLast = (m_pushedKeyLast + 1) % PUSHED_KEYS_CACHE_SIZE;
+        }
+    }
+    uint8_t pushedKey = 0;
+    if(m_pushedKeyFirst != m_pushedKeyLast) {
+        pushedKey = m_pushedKeys[m_pushedKeyFirst];
+        m_pushedKeyFirst = (m_pushedKeyFirst + 1) % PUSHED_KEYS_CACHE_SIZE;
+    }
+    return pushedKey;
 }

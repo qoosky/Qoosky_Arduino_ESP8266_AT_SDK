@@ -74,6 +74,10 @@ class Qoosky_ESP8266_AT
  private:
     bool m_webSocketStatus; // WebSocket 通信の接続状況
     String m_apiToken; // Qoosky API トークンのキャッシュ
+    unsigned long m_lastWebSocketTime; // 最後に WebSocket フレームを受信または送信したタイミングを記録 (90 秒のタイムアウトを判別するため)
+    uint8_t *m_pushedKeys; // 押されたボタンを queue として保存します。
+    uint8_t m_pushedKeyFirst; // queue の最初を指します。
+    uint8_t m_pushedKeyLast; // queue の最後を指します。
 };
 
 #endif // #ifndef QOOSKY_ESP8266_AT_H_
