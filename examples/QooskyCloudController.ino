@@ -44,8 +44,6 @@ void loop() {
     if(key) {
         // PC のシリアルモニタに出力します。
         Serial.println("Received: " + String(key));
-        // Qoosky Cloud Controller の下部に表示されるメッセージを送信します。
-        qoosky.sendMessage("Echo back: " + String(key));
     }
     else {
         Serial.println("No pushed key.");
