@@ -333,11 +333,14 @@ int Qoosky_ESP8266_AT::popPushedKey() {
     }
     int index = -3;
     while((index = response.indexOf("IPD", index + 3)) != -1) {
+        if(response.length() - 1 < index + 44) break;
         uint8_t key1 = response[index + 22] - '0';
         uint8_t key2 = response[index + 44] - '0';
         uint8_t pushedKey = 0;
-        if(key1 == key2) pushedKey = key1;
-        if(pushedKey != 0) m_lastWebSocketTime = millis();
+        if(key1 == key2) {
+            pushedKey = key1;
+            m_lastWebSocketTime = millis();
+        }
         if((m_pushedKeyLast + 1) % PUSHED_KEYS_CACHE_SIZE != m_pushedKeyFirst) {
             m_pushedKeys[m_pushedKeyLast] = pushedKey;
             m_pushedKeyLast = (m_pushedKeyLast + 1) % PUSHED_KEYS_CACHE_SIZE;
