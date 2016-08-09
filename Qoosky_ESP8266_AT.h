@@ -36,7 +36,7 @@ class Qoosky_ESP8266_AT
     bool statusWiFi();
 
     // WiFi アクセスポイントに接続または切断します。
-    bool connectAP(String ssid, String password);
+    bool connectAP(const String& ssid, const String& password);
     bool disconnectAP();
 
  private:
@@ -59,7 +59,7 @@ class Qoosky_ESP8266_AT
 
  public:
     // 事前に取得しておいた認証トークンで Qoosky に接続します。
-    bool connectQoosky(String apiToken);
+    bool connectQoosky(const String& apiToken);
 
     // メッセージの送受信を行います。
     bool sendMessage(const String& msg); // Qoosky Cloud Controller の下部に表示されるメッセージを送信します。
@@ -67,7 +67,7 @@ class Qoosky_ESP8266_AT
 
  private:
     // TCP 通信を開始または終了します。
-    bool connectTcp(String host, uint32_t port);
+    bool connectTcp(const String& host, uint32_t port);
     bool disconnectTcp();
     bool connectedTcp(); // TCP コネクションが存在すれば true を返します。
 

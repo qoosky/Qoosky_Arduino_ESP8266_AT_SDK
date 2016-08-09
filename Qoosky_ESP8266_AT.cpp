@@ -55,13 +55,13 @@ bool Qoosky_ESP8266_AT::checkATResponse(String target, uint32_t timeout) {
 
 bool Qoosky_ESP8266_AT::statusAT() {
     rxClear();
-    m_serial->println("AT");
+    m_serial->println(F("AT"));
     return checkATResponse();
 }
 
 bool Qoosky_ESP8266_AT::restart() {
     rxClear();
-    m_serial->println("AT+RST");
+    m_serial->println(F("AT+RST"));
     if(!checkATResponse()) return false;
     delay(2000);
     const unsigned long start = millis();
@@ -75,9 +75,9 @@ bool Qoosky_ESP8266_AT::restart() {
     return false;
 }
 
-bool Qoosky_ESP8266_AT::connectAP(String ssid, String password) {
+bool Qoosky_ESP8266_AT::connectAP(const String& ssid, const String& password) {
     rxClear();
-    m_serial->println("AT+CWMODE_DEF=1"); // 1: station(client) mode, 2: softAP(server) mode, 3: 1&2
+    m_serial->println(F("AT+CWMODE_DEF=1")); // 1: station(client) mode, 2: softAP(server) mode, 3: 1&2
     if(!(checkATResponse() && restart())) return false; // "DEF"ault の cwMode を変更して再起動します。
 
     uint8_t retry = 5;
@@ -85,28 +85,28 @@ bool Qoosky_ESP8266_AT::connectAP(String ssid, String password) {
         // アクセスポイントに接続します。
         rxClear();
         delay(500);
-        m_serial->print("AT+CWJAP_DEF=\"");
+        m_serial->print(F("AT+CWJAP_DEF=\""));
         m_serial->print(ssid);
-        m_serial->print("\",\"");
+        m_serial->print(F("\",\""));
         m_serial->print(password);
-        m_serial->println("\"");
-        if(checkATResponse("OK", 10000)) return true;
+        m_serial->println(F("\""));
+        if(checkATResponse(F("OK"), 10000)) return true;
     } while(--retry);
     return false;
 }
 
 bool Qoosky_ESP8266_AT::disconnectAP() {
     rxClear();
-    m_serial->println("AT+CWQAP");
+    m_serial->println(F("AT+CWQAP"));
     return checkATResponse();
 }
 
 uint8_t Qoosky_ESP8266_AT::ipStatus() {
     String buf;
     rxClear();
-    m_serial->println("AT+CIPSTATUS");
-    checkATResponse(&buf, "S:");
-    uint32_t index = buf.indexOf(":");
+    m_serial->println(F("AT+CIPSTATUS"));
+    checkATResponse(&buf, F("S:"));
+    uint32_t index = buf.indexOf(F(":"));
     return buf.substring(index + 1, index + 2).toInt();
 }
 
@@ -130,22 +130,22 @@ bool Qoosky_ESP8266_AT::connectedTcp() {
 
 bool Qoosky_ESP8266_AT::disconnectTcp() {
     rxClear();
-    m_serial->println("AT+CIPCLOSE");
+    m_serial->println(F("AT+CIPCLOSE"));
     return checkATResponse();
 }
 
-bool Qoosky_ESP8266_AT::connectTcp(String host, uint32_t port) {
+bool Qoosky_ESP8266_AT::connectTcp(const String& host, uint32_t port) {
     if(connectedTcp()) disconnectTcp();
     String buf;
     uint8_t retry = 10;
     do {
         rxClear();
-        m_serial->print("AT+CIPSTART=\"TCP\",\"");
+        m_serial->print(F("AT+CIPSTART=\"TCP\",\""));
         m_serial->print(host);
-        m_serial->print("\",");
+        m_serial->print(F("\","));
         m_serial->println(port);
         checkATResponse(&buf);
-        if(buf.indexOf("OK") != -1 || buf.indexOf("ALREADY") != -1) {
+        if(buf.indexOf(F("OK")) != -1 || buf.indexOf(F("ALREADY")) != -1) {
             return true;
         }
         delay(100);
@@ -153,24 +153,24 @@ bool Qoosky_ESP8266_AT::connectTcp(String host, uint32_t port) {
     return false;
 }
 
-bool Qoosky_ESP8266_AT::connectQoosky(String apiToken) {
+bool Qoosky_ESP8266_AT::connectQoosky(const String& apiToken) {
     if(m_webSocketStatus) return true; // 既に正常な接続が存在する場合は何もせず終了します。
     m_apiToken = apiToken; // API トークンのキャッシュを更新します。
 
     // (既に TCP 接続があれば切断して) TCP 接続を確立します。
-    connectTcp("api.qoosky.io", 80);
+    connectTcp(F("api.qoosky.io"), 80);
 
     // RFC 6455 に準じた WebSocket handshake
     // https://tools.ietf.org/html/rfc6455
     const uint8_t nUpgradeRequest = 7;
     String upgradeRequest[] = {
-        "GET /v1/controller/actuator/ws HTTP/1.1\r\n",
-        "Host: api.qoosky.io\r\n",
-        "Upgrade: websocket\r\n",
-        "Connection: Upgrade\r\n",
-        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n", // RFC から引用した固定値
-        "Sec-WebSocket-Version: 13\r\n",
-        "User-Agent: Arduino ESP8266\r\n\r\n",
+        F("GET /v1/controller/actuator/ws HTTP/1.1\r\n"),
+        F("Host: api.qoosky.io\r\n"),
+        F("Upgrade: websocket\r\n"),
+        F("Connection: Upgrade\r\n"),
+        F("Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"), // RFC から引用した固定値
+        F("Sec-WebSocket-Version: 13\r\n"),
+        F("User-Agent: Arduino ESP8266\r\n\r\n"),
     };
     uint32_t len = 0;
     for(uint8_t i = 0; i < nUpgradeRequest; ++i) len += upgradeRequest[i].length();
@@ -180,9 +180,9 @@ bool Qoosky_ESP8266_AT::connectQoosky(String apiToken) {
     do {
         String buf;
         rxClear();
-        m_serial->print("AT+CIPSEND=");
+        m_serial->print(F("AT+CIPSEND="));
         m_serial->println(len);
-        if(checkATResponse(&buf, "> ")) break;
+        if(checkATResponse(&buf, F("> "))) break;
         if(!(--retry)) return false; // タイムアウトエラー
     } while(true);
 
@@ -208,7 +208,7 @@ bool Qoosky_ESP8266_AT::connectQoosky(String apiToken) {
 
     // ノイズの影響で "HTTP/1.1 101 Switching Protocols" が完全に受信できないことがあるため、
     // リクエストを送信できていれば (SEND OK) よいとします。
-    if(response.indexOf("OK") == -1) return false;
+    if(response.indexOf(F("OK")) == -1) return false;
 
     // API トークンを送信して認証します。JSON 文字列を用意します。
     String json = "{\"token\":\"" + apiToken + "\"}";
@@ -231,15 +231,16 @@ bool Qoosky_ESP8266_AT::connectQoosky(String apiToken) {
     //> transformed-octet-i = original-octet-i XOR masking-key-octet-j
     for(uint32_t i = 0; i < json.length(); ++i) frame += (char)(json[i] ^ frame[i % 4 + 2]);
     len = 6 + json.length();
+    json = ""; // メモリを解放
 
     // データ送信をするための AT コマンド
     retry = 15;
     do {
         String buf;
         rxClear();
-        m_serial->print("AT+CIPSEND=");
+        m_serial->print(F("AT+CIPSEND="));
         m_serial->println(len);
-        if(checkATResponse(&buf, "> ")) break;
+        if(checkATResponse(&buf, F("> "))) break;
         if(!(--retry)) return false;
     } while(true);
 
@@ -260,7 +261,7 @@ bool Qoosky_ESP8266_AT::connectQoosky(String apiToken) {
             if(--lenLimit == 0) break;
         }
     }
-    if(response.indexOf("suc") == -1) return false; // Autheotication success.
+    if(response.indexOf(F("suc")) == -1) return false; // Autheotication success.
     m_lastWebSocketTime = millis();
     return (m_webSocketStatus = true);
 }
@@ -284,9 +285,9 @@ bool Qoosky_ESP8266_AT::sendMessage(const String& msg) {
     // データ送信をするための AT コマンド
     String buf;
     rxClear();
-    m_serial->print("AT+CIPSEND=");
+    m_serial->print(F("AT+CIPSEND="));
     m_serial->println(len);
-    checkATResponse(&buf, "> ");
+    checkATResponse(&buf, F("> "));
 
     // データを送信します。
     uint32_t sentLen = 0;
@@ -305,7 +306,7 @@ bool Qoosky_ESP8266_AT::sendMessage(const String& msg) {
             if(--lenLimit == 0) break;
         }
     }
-    if(response.indexOf("OK") == -1) return false;
+    if(response.indexOf(F("OK")) == -1) return false;
     m_lastWebSocketTime = millis();
     return true;
 }
@@ -332,7 +333,7 @@ int Qoosky_ESP8266_AT::popPushedKey() {
         }
     }
     int index = -3;
-    while((index = response.indexOf("IPD", index + 3)) != -1) {
+    while((index = response.indexOf(F("IPD"), index + 3)) != -1) {
         if(response.length() - 1 < index + 44) break;
         uint8_t key1 = response[index + 22] - '0';
         uint8_t key2 = response[index + 44] - '0';
