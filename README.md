@@ -17,7 +17,7 @@ IoT BaaS APIs のひとつ [Qoosky Cloud Controller](https://www.qoosky.io/help/
 
 サンプルスケッチについて
 ==================
-WiFi 接続が正常に行えることを確認するためには [ConnectWiFi.ino](https://github.com/qoosky/Qoosky_Arduino_ESP8266_AT_SDK/blob/master/examples/ConnectWiFi.ino) をご利用ください。正常に接続できることが確認できたら、次はいよいよ [QooskyCloudController.ino](https://github.com/qoosky/Qoosky_Arduino_ESP8266_AT_SDK/blob/master/examples/QooskyCloudController.ino) で Arduino をスマホや PC から遠隔操作してみましょう。
+WiFi 接続が正常に行えることを確認するためには [ConnectWiFi.ino](https://github.com/qoosky/Qoosky_Arduino_ESP8266_AT_SDK/blob/master/examples/ConnectWiFi/ConnectWiFi.ino) をご利用ください。正常に接続できることが確認できたら、次はいよいよ [QooskyCloudController.ino](https://github.com/qoosky/Qoosky_Arduino_ESP8266_AT_SDK/blob/master/examples/QooskyCloudController/QooskyCloudController.ino) で Arduino をスマホや PC から遠隔操作してみましょう。
 
 [ゲストモードで Qoosky Cloud Controller を起動](https://www.qoosky.io/account/api/cc)
 
