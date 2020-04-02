@@ -164,7 +164,7 @@ bool Qoosky_ESP8266_AT::connectQoosky(const String& apiToken) {
     // https://tools.ietf.org/html/rfc6455
     const uint8_t nUpgradeRequest = 7;
     String upgradeRequest[] = {
-        F("GET /v1/controller/actuator/ws HTTP/1.1\r\n"),
+        F("GET /v1/websocket-relay-server/actuator/ws HTTP/1.1\r\n"),
         F("Host: api.qoosky.io\r\n"),
         F("Upgrade: websocket\r\n"),
         F("Connection: Upgrade\r\n"),
