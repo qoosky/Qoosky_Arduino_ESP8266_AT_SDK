@@ -158,14 +158,14 @@ bool Qoosky_ESP8266_AT::connectQoosky(const String& apiToken) {
     m_apiToken = apiToken; // API トークンのキャッシュを更新します。
 
     // (既に TCP 接続があれば切断して) TCP 接続を確立します。
-    connectTcp(F("api.qoosky.io"), 80);
+    connectTcp(F("api.qoosky.dev"), 80);
 
     // RFC 6455 に準じた WebSocket handshake
     // https://tools.ietf.org/html/rfc6455
     const uint8_t nUpgradeRequest = 7;
     String upgradeRequest[] = {
         F("GET /v1/websocket-relay-server/actuator/ws HTTP/1.1\r\n"),
-        F("Host: api.qoosky.io\r\n"),
+        F("Host: api.qoosky.dev\r\n"),
         F("Upgrade: websocket\r\n"),
         F("Connection: Upgrade\r\n"),
         F("Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"), // RFC から引用した固定値

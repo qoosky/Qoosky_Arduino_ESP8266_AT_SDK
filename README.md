@@ -1,10 +1,10 @@
 # Qoosky_Arduino_ESP8266_AT_SDK
 
-[Qoosky API](https://www.qoosky.io/help/api) を Arduino から利用するためのライブラリです。
+[Qoosky API](https://www.qoosky.dev/help/api) を Arduino から利用するためのライブラリです。
 
 # 回路図
 
-[こちらのページ](https://www.qoosky.io/techs/14bfffdc82)に記載の回路図を利用します。
+[こちらのページ](https://www.qoosky.dev/techs/14bfffdc82)に記載の回路図を利用します。
 
 - Arduino (UNO など)
 - ESP-WROOM-02
