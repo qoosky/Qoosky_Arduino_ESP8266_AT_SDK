@@ -4,7 +4,7 @@
 
 # 回路図
 
-[こちらのページ](https://www.qoosky.dev/techs/14bfffdc82)に記載の回路図を利用します。
+[こちらのページ](https://www.qoosky.dev/techs/14bfffdc82/)に記載の回路図を利用します。
 
 - Arduino (UNO など)
 - ESP-WROOM-02
